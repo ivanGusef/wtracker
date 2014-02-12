@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tnm="http://schemas.android.com/apk/res-auto">
+    <item
+            android:id="@+id/mi_change_connection"
+            android:title="@string/start_tracking"
+            android:icon="@android:drawable/ic_media_play"
+            tnm:showAsAction="ifRoom"/>
+</menu>

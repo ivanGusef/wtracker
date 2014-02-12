@@ -14,6 +14,10 @@ import com.ivangusev.wtracker.activity.MapActivity;
 import de.tavendo.autobahn.WebSocketConnection;
 import de.tavendo.autobahn.WebSocketException;
 import de.tavendo.autobahn.WebSocketHandler;
+import de.tavendo.autobahn.WebSocketOptions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by ivan on 12.02.14.
@@ -23,6 +27,8 @@ public class TrackerService extends Service {
     private static final String TAG = TrackerService.class.getName();
 
     private static final String WEB_SERVER_URL = "ws://mini-mdt.wheely.com?username=%s&password=%s";
+    private static final int SOCKET_CONNECTION_TIMEOUT = 30000; //30 seconds
+    private static final int SOCKET_RECEIVE_TIMEOUT = 10000; //10 seconds
 
     private ForegroundCompatWrapper mForegroundCompatWrapper = new ForegroundCompatWrapper(this);
     private NotificationCompat.Builder mForegroundNotifBuilder;
@@ -52,11 +58,10 @@ public class TrackerService extends Service {
     }
 
     public void login(CharSequence login, CharSequence password) throws WebSocketException {
-        mConnection.connect(String.format(WEB_SERVER_URL, login, password), new DefaultWebSocketHandler());
-    }
-
-    public void sendMessage(String message) {
-        mConnection.sendTextMessage(message);
+        final WebSocketOptions options = new WebSocketOptions();
+        options.setSocketConnectTimeout(SOCKET_CONNECTION_TIMEOUT);
+        options.setSocketReceiveTimeout(SOCKET_RECEIVE_TIMEOUT);
+        mConnection.connect(String.format(WEB_SERVER_URL, login, password), new DefaultWebSocketHandler(), options);
     }
 
     private Notification prepareNotification(int textRes) {
@@ -76,27 +81,67 @@ public class TrackerService extends Service {
         return mForegroundNotifBuilder.build();
     }
 
-    static class DefaultWebSocketHandler extends WebSocketHandler {
+    class DefaultWebSocketHandler extends WebSocketHandler {
 
         @Override
         public void onOpen() {
             Log.d(TAG, "WebSocket opened");
+            final Map<String, Receiver> receivers = mBinder.getReceivers();
+            for (String id : receivers.keySet()) {
+                receivers.get(id).onOpen();
+            }
         }
 
         @Override
         public void onClose(int code, String reason) {
             Log.d(TAG, "WebSocket closed: code - " + code + ", reason: " + reason);
+            final Map<String, Receiver> receivers = mBinder.getReceivers();
+            for (String id : receivers.keySet()) {
+                receivers.get(id).onClose(code, reason);
+            }
         }
 
         @Override
         public void onTextMessage(String payload) {
             Log.d(TAG, "WebSocket received message: " + payload);
+            final Map<String, Receiver> receivers = mBinder.getReceivers();
+            for (String id : receivers.keySet()) {
+                receivers.get(id).onMessage(payload);
+            }
         }
     }
 
     public class TrackerBinder extends Binder {
-        public TrackerService getService() {
-            return TrackerService.this;
+
+        private final Map<String, Receiver> mReceivers = new HashMap<String, Receiver>();
+
+        public void login(CharSequence login, CharSequence password) throws WebSocketException {
+            final WebSocketOptions options = new WebSocketOptions();
+            options.setSocketConnectTimeout(SOCKET_CONNECTION_TIMEOUT);
+            options.setSocketReceiveTimeout(SOCKET_RECEIVE_TIMEOUT);
+            mConnection.connect(String.format(WEB_SERVER_URL, login, password), new DefaultWebSocketHandler(), options);
         }
+
+        public void sendMessage(String message) {
+            if(mConnection.isConnected()) mConnection.sendTextMessage(message);
+        }
+
+        public void registerReceiver(String id, Receiver receiver) {
+            mReceivers.put(id, receiver);
+        }
+
+        public void unregisterReceiver(String id) {
+            mReceivers.remove(id);
+        }
+
+        public Map<String, Receiver> getReceivers() {
+            return mReceivers;
+        }
+    }
+
+    public static interface Receiver {
+        void onOpen();
+        void onClose(int code, String reason);
+        void onMessage(String text);
     }
 }
