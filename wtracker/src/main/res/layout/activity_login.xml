@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="@dimen/window_padding_h"
+                android:paddingTop="@dimen/window_padding_v"
+                android:paddingRight="@dimen/window_padding_h"
+                android:paddingBottom="@dimen/window_padding_v">
+
+    <EditText android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:hint="@string/login"
+              android:imeOptions="actionNext"
+              android:id="@+id/input_login"/>
+
+    <EditText android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_below="@id/input_login"
+              android:layout_marginTop="@dimen/item_padding_v"
+              android:hint="@string/password"
+              android:imeOptions="actionGo"
+              android:inputType="textPassword"
+              android:id="@+id/input_password"/>
+
+    <Button android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/input_password"
+            android:text="@string/sign_in"
+            android:onClick="signIn"
+            android:id="@+id/sign_in_btn"/>
+
+    <Button android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:text="@string/send"
+            android:onClick="send"
+            android:id="@+id/send_btn"/>
+    <EditText android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_above="@id/send_btn"
+              android:hint="@string/longitude"
+              android:inputType="numberDecimal"
+              android:id="@+id/lon_input"/>
+    <EditText android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_above="@id/lon_input"
+              android:hint="@string/latitude"
+              android:inputType="numberDecimal"
+              android:id="@+id/lat_input"/>
+
+</RelativeLayout>

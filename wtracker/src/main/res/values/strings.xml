@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Wheely Tracker</string>
+    <string name="service_tracker_id">Сервис запущен</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="login">Login</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign In</string>
+    <string name="tracking">Tracking</string>
+    <string name="send">Send</string>
+    <string name="longitude">Longitude</string>
+    <string name="latitude">Latitude</string>
+</resources>
