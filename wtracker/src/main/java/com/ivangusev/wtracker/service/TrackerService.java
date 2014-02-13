@@ -8,7 +8,6 @@ import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import com.ivangusev.wtracker.R;
-import com.ivangusev.wtracker.activity.MapActivity;
 
 /**
  * Created by ivan on 12.02.14.
@@ -34,7 +33,8 @@ public class TrackerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent.hasExtra(EXTRA_CONNECT_FORCE) && intent.getBooleanExtra(EXTRA_CONNECT_FORCE, false)) mBinder.reconnect();
+        if (intent.hasExtra(EXTRA_CONNECT_FORCE) && intent.getBooleanExtra(EXTRA_CONNECT_FORCE, false))
+            mBinder.reconnect();
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -64,9 +64,8 @@ public class TrackerService extends Service {
         mForegroundNotifBuilder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher));
         mForegroundNotifBuilder.setSmallIcon(android.R.drawable.stat_notify_sync);
 
-        final Intent intent = new Intent(this, MapActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        final PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        final Intent intent = new Intent(getPackageName() + ".ACTION_FAKE");
+        final PendingIntent pIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
         mForegroundNotifBuilder.setContentIntent(pIntent);
 
         return mForegroundNotifBuilder.build();

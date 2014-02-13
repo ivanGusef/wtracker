@@ -5,7 +5,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.ActionBarActivity;
@@ -122,14 +121,7 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
         mProgress.dismiss();
         mPreferenceManager.save(Preference.SERVICE_ACTIVE, true);
         startService(new Intent(this, TrackerService.class));
-        final Intent intent = new Intent(this, MapActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        } else {
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        }
-        startActivity(intent);
+        startActivity(new Intent(this, MapActivity.class));
         mBinder.unregisterReceiver(TAG.hashCode());
     }
 

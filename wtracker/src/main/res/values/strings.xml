@@ -15,4 +15,5 @@
     <string name="stop_tracking">Stop tracking</string>
     <string name="authenticating">Authenticating</string>
     <string name="sign_out">Sign Out</string>
+    <string name="dsc_splash">Splash logo</string>
 </resources>

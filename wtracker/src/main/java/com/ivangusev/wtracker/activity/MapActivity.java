@@ -3,7 +3,6 @@ package com.ivangusev.wtracker.activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.ActionBarActivity;
@@ -116,15 +115,9 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
             mPreferenceManager.clear();
             mPreferenceManager.save(Preference.LOGIN, login);
 
-            final Intent intent = new Intent(this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            } else {
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            }
-            startActivity(intent);
+            startActivity(new Intent(this, LoginActivity.class));
             stopService(new Intent(this, TrackerService.class));
+            finish();
             return true;
         }
         return false;
