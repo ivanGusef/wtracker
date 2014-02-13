@@ -92,10 +92,10 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
         final MenuItem item = menu.findItem(R.id.mi_change_connection);
         if (mPreferenceManager.getBoolean(Preference.SERVICE_ACTIVE)) {
             item.setIcon(android.R.drawable.presence_offline);
-            item.setTitle(R.string.start_tracking);
+            item.setTitle(R.string.stop_tracking);
         } else {
             item.setIcon(android.R.drawable.presence_online);
-            item.setTitle(R.string.stop_tracking);
+            item.setTitle(R.string.start_tracking);
         }
         return true;
     }
@@ -106,7 +106,7 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
             final boolean serviceActive = mPreferenceManager.getBoolean(Preference.SERVICE_ACTIVE);
             mPreferenceManager.save(Preference.SERVICE_ACTIVE, !serviceActive);
 
-            if (serviceActive) mBinder.disconnect();
+            if (serviceActive) mBinder.disconnect(false);
             else mBinder.reconnect();
 
             supportInvalidateOptionsMenu();
@@ -116,8 +116,6 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
             mPreferenceManager.clear();
             mPreferenceManager.save(Preference.LOGIN, login);
 
-            mBinder.disconnect();
-
             final Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
@@ -126,6 +124,7 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             }
             startActivity(intent);
+            stopService(new Intent(this, TrackerService.class));
             return true;
         }
         return false;

@@ -39,6 +39,7 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     private final TrackerService mService;
     private final SparseArray<Receiver> mReceivers = new SparseArray<Receiver>();
     private final SparseArray<LatLng> mPoints = new SparseArray<LatLng>();
+
     private final WebSocketConnection mConnection = new WebSocketConnection();
 
     private final LocationClient mLocationClient;
@@ -47,6 +48,7 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     private LatLng mLastLocation;
     private boolean mLocationRequested;
     private PreferenceManager mPreferenceManager;
+    private boolean mSilentDisconnect;
 
     public TrackerBinder(TrackerService mService) {
         this.mService = mService;
@@ -102,8 +104,15 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
         }
     }
 
-    public void disconnect() {
-        if (mConnection.isConnected()) mConnection.disconnect();
+    public void reconnect() {
+        connect(mPreferenceManager.getString(Preference.LOGIN), mPreferenceManager.getString(Preference.PASSWORD));
+    }
+
+    public void disconnect(boolean silent) {
+        if (mConnection.isConnected()) {
+            mConnection.disconnect();
+            mSilentDisconnect = silent;
+        }
     }
 
     public void startLocationSending() {
@@ -163,10 +172,6 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
         mLocationClient.removeLocationUpdates(this);
     }
 
-    public void reconnect() {
-        connect(mPreferenceManager.getString(Preference.LOGIN), mPreferenceManager.getString(Preference.PASSWORD));
-    }
-
     class DefaultWebSocketHandler extends WebSocketHandler {
 
         @Override
@@ -182,9 +187,13 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
         @Override
         public void onClose(int code, String reason) {
             Log.d(TAG, "WebSocket closed {code: " + code + ", reason: " + reason + '}');
-            final int receiversCount = mReceivers.size();
-            for (int i = 0; i < receiversCount; i++) {
-                mReceivers.get(mReceivers.keyAt(i)).onConnectionFailed(code, reason);
+            if (!mSilentDisconnect) {
+                final int receiversCount = mReceivers.size();
+                for (int i = 0; i < receiversCount; i++) {
+                    mReceivers.get(mReceivers.keyAt(i)).onConnectionFailed(code, reason);
+                }
+            } else {
+                mSilentDisconnect = false;
             }
             stopLocationSending();
         }

@@ -7,15 +7,13 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import android.util.SparseArray;
-import com.google.android.gms.maps.model.LatLng;
 import com.ivangusev.wtracker.R;
 import com.ivangusev.wtracker.activity.MapActivity;
 
 /**
  * Created by ivan on 12.02.14.
  */
-public class TrackerService extends Service implements TrackerBinder.Receiver {
+public class TrackerService extends Service {
 
     private static final String TAG = TrackerService.class.getName();
 
@@ -43,7 +41,7 @@ public class TrackerService extends Service implements TrackerBinder.Receiver {
     @Override
     public void onDestroy() {
         mForegroundCompatWrapper.stopForegroundCompat(R.string.service_tracker_id);
-        mBinder.disconnect();
+        mBinder.disconnect(true);
         super.onDestroy();
     }
 
@@ -72,25 +70,5 @@ public class TrackerService extends Service implements TrackerBinder.Receiver {
         mForegroundNotifBuilder.setContentIntent(pIntent);
 
         return mForegroundNotifBuilder.build();
-    }
-
-    @Override
-    public void onConnectionEstablished() {
-        changeStatus(R.string.status_connected);
-    }
-
-    @Override
-    public void onConnectionFailed(int code, String reason) {
-        changeStatus(R.string.status_disconnected);
-    }
-
-    @Override
-    public void onUpdatePoints(SparseArray<LatLng> points) {
-
-    }
-
-    @Override
-    public void onUpdateMyLocation(LatLng point) {
-
     }
 }
