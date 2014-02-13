@@ -1,4 +1,4 @@
-package com.ivangusev.wtracker.client.service;
+package com.ivangusev.wtracker.service;
 
 import android.app.Notification;
 import android.app.NotificationManager;
