@@ -22,6 +22,7 @@ import com.ivangusev.wtracker.PreferenceManager;
 import com.ivangusev.wtracker.R;
 import com.ivangusev.wtracker.service.TrackerBinder;
 import com.ivangusev.wtracker.service.TrackerService;
+import junit.framework.Assert;
 
 /**
  * Created by ivan on 12.02.14.
@@ -89,11 +90,12 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
         getMenuInflater().inflate(R.menu.menu_map, menu);
 
         final MenuItem item = menu.findItem(R.id.mi_change_connection);
+        Assert.assertNotNull(item);
         if (mPreferenceManager.getBoolean(Preference.SERVICE_ACTIVE)) {
-            item.setIcon(android.R.drawable.presence_offline);
+            item.setIcon(R.drawable.ic_action_cancel);
             item.setTitle(R.string.stop_tracking);
         } else {
-            item.setIcon(android.R.drawable.presence_online);
+            item.setIcon(R.drawable.ic_action_import_export);
             item.setTitle(R.string.start_tracking);
         }
         return true;

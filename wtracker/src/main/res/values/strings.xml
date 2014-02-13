@@ -16,4 +16,5 @@
     <string name="authenticating">Authenticating</string>
     <string name="sign_out">Sign Out</string>
     <string name="dsc_splash">Splash logo</string>
+    <string name="wait_for_connection">Connecting to service. Wait please.</string>
 </resources>

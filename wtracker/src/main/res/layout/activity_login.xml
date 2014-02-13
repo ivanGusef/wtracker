@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -12,23 +12,16 @@
     <EditText android:layout_width="match_parent"
               android:layout_height="wrap_content"
               android:hint="@string/login"
+              android:singleLine="true"
               android:imeOptions="actionNext"
               android:id="@+id/input_login"/>
 
     <EditText android:layout_width="match_parent"
               android:layout_height="wrap_content"
-              android:layout_below="@id/input_login"
               android:layout_marginTop="@dimen/item_padding_v"
               android:hint="@string/password"
+              android:singleLine="true"
               android:imeOptions="actionGo"
               android:inputType="textPassword"
               android:id="@+id/input_password"/>
-
-    <Button android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:text="@string/sign_in"
-            android:onClick="signIn"
-            android:id="@+id/sign_in_btn"/>
-
-</RelativeLayout>
+</LinearLayout>

@@ -8,8 +8,11 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.ActionBarActivity;
+import android.text.TextUtils;
 import android.util.SparseArray;
-import android.view.View;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.gms.maps.model.LatLng;
@@ -61,6 +64,18 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
         mPreferenceManager = PreferenceManager.getInstance(this);
         mLoginInput.setText(mPreferenceManager.getString(Preference.LOGIN));
 
+        mPasswordInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if(event == null) return false;
+                if(event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    signIn();
+                    return true;
+                }
+                return false;
+            }
+        });
+
         mProgress = new ProgressDialog(this);
         mProgress.setMessage(getString(R.string.authenticating));
     }
@@ -80,19 +95,17 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
         super.onStop();
     }
 
-    public void signIn(View view) {
-        if (mBinder == null) {
-            Toast.makeText(this, "Connecting to service. Wait please.", Toast.LENGTH_SHORT).show();
-        } else {
-            final CharSequence login = mLoginInput.getText();
-            final CharSequence password = mPasswordInput.getText();
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_sign_in, menu);
+        return true;
+    }
 
-            mPreferenceManager.save(Preference.LOGIN, String.valueOf(login));
-            mPreferenceManager.save(Preference.PASSWORD, String.valueOf(password));
-
-            mBinder.connect(login, password);
-            mProgress.show();
-        }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() != R.id.mi_sign_in) return false;
+        signIn();
+        return true;
     }
 
     @Override
@@ -128,5 +141,35 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
     @Override
     public void onUpdateMyLocation(LatLng point) {
 
+    }
+
+    private void signIn() {
+        if (mBinder == null) {
+            Toast.makeText(this, R.string.wait_for_connection, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!validate(mLoginInput, mPasswordInput)) {
+            return;
+        }
+        final CharSequence login = mLoginInput.getText();
+        final CharSequence password = mPasswordInput.getText();
+
+        mPreferenceManager.save(Preference.LOGIN, String.valueOf(login));
+        mPreferenceManager.save(Preference.PASSWORD, String.valueOf(password));
+
+        mBinder.connect(login, password);
+        mProgress.show();
+    }
+
+    private boolean validate(TextView... fields) {
+        if (fields == null) return true;
+        boolean valid = true;
+        for (TextView field : fields) {
+            if (field != null && !TextUtils.isGraphic(String.valueOf(field.getText()))) {
+                field.setError("Required value");
+                valid = false;
+            }
+        }
+        return valid;
     }
 }

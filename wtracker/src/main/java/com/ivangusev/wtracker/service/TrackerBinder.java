@@ -1,8 +1,7 @@
 package com.ivangusev.wtracker.service;
 
 import android.location.Location;
-import android.os.Binder;
-import android.os.Bundle;
+import android.os.*;
 import android.util.Log;
 import android.util.SparseArray;
 import com.google.android.gms.common.ConnectionResult;
@@ -22,11 +21,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * Created by ivan on 13.02.14.
  */
 public class TrackerBinder extends Binder implements GooglePlayServicesClient.ConnectionCallbacks,
-        GooglePlayServicesClient.OnConnectionFailedListener, LocationListener {
+        GooglePlayServicesClient.OnConnectionFailedListener, LocationListener, Handler.Callback {
 
     private static final String TAG = TrackerBinder.class.getName();
 
@@ -35,6 +37,15 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     private static final String WEB_SERVER_URL = "ws://mini-mdt.wheely.com?username=%s&password=%s";
     private static final int SOCKET_CONNECTION_TIMEOUT = 30000; //30 seconds
     private static final int SOCKET_RECEIVE_TIMEOUT = 10000; //10 seconds
+
+    private static final int MSG_WEB_SOCKET_EXC = 1;
+    private static final int MSG_ON_CONNECTION_ESTABLISHED = 2;
+    private static final int MSG_ON_CONNECTION_FAILED = 3;
+    private static final int MSG_ON_UPDATE_POINTS = 4;
+    private static final int MSG_ON_UPDATE_MY_LOCATION = 5;
+
+    private final Handler mHandler;
+    private final ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
 
     private final TrackerService mService;
     private final SparseArray<Receiver> mReceivers = new SparseArray<Receiver>();
@@ -52,6 +63,8 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
 
     public TrackerBinder(TrackerService mService) {
         this.mService = mService;
+
+        mHandler = new Handler(Looper.getMainLooper(), this);
 
         mPreferenceManager = PreferenceManager.getInstance(mService);
 
@@ -73,35 +86,32 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     }
 
     public void notifyMyLocation() {
-        if (mLastLocation == null) return;
-        final int receiversCount = mReceivers.size();
-        for (int i = 0; i < receiversCount; i++) {
-            mReceivers.get(mReceivers.keyAt(i)).onUpdateMyLocation(mLastLocation);
-        }
+        mHandler.sendEmptyMessage(MSG_ON_UPDATE_MY_LOCATION);
     }
 
     public void notifyUpdatePoints() {
-        if (mPoints.size() == 0) return;
-        final int receiversCount = mReceivers.size();
-        for (int i = 0; i < receiversCount; i++) {
-            mReceivers.get(mReceivers.keyAt(i)).onUpdatePoints(mPoints);
-        }
+        mHandler.sendEmptyMessage(MSG_ON_UPDATE_POINTS);
     }
 
-    public void connect(CharSequence login, CharSequence password) {
-        if (mConnection.isConnected()) return;
-        final WebSocketOptions options = new WebSocketOptions();
-        options.setSocketConnectTimeout(SOCKET_CONNECTION_TIMEOUT);
-        options.setSocketReceiveTimeout(SOCKET_RECEIVE_TIMEOUT);
-        try {
-            mConnection.connect(String.format(WEB_SERVER_URL, login, password), new DefaultWebSocketHandler(), options);
-        } catch (WebSocketException e) {
-            Log.e(TAG, e.getMessage());
-            final int receiversCount = mReceivers.size();
-            for (int i = 0; i < receiversCount; i++) {
-                mReceivers.get(mReceivers.keyAt(i)).onConnectionFailed(-1, e.getMessage());
+    public void connect(final CharSequence login, final CharSequence password) {
+        mExecutorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                if (mConnection.isConnected()) return;
+                final WebSocketOptions options = new WebSocketOptions();
+                options.setSocketConnectTimeout(SOCKET_CONNECTION_TIMEOUT);
+                options.setSocketReceiveTimeout(SOCKET_RECEIVE_TIMEOUT);
+                try {
+                    mConnection.connect(String.format(WEB_SERVER_URL, login, password), new DefaultWebSocketHandler(), options);
+                } catch (WebSocketException e) {
+                    Log.e(TAG, e.getMessage());
+                    final Message msg = new Message();
+                    msg.what = MSG_WEB_SOCKET_EXC;
+                    msg.obj = e.getMessage();
+                    mHandler.sendMessage(msg);
+                }
             }
-        }
+        });
     }
 
     public void reconnect() {
@@ -134,17 +144,22 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     }
 
     @Override
-    public void onLocationChanged(Location location) {
-        mLastLocation = new LatLng(location.getLatitude(), location.getLongitude());
-        try {
-            final JSONObject jLocation = new JSONObject();
-            jLocation.put("lat", mLastLocation.latitude);
-            jLocation.put("lon", mLastLocation.longitude);
-            mConnection.sendTextMessage(jLocation.toString());
-        } catch (JSONException e) {
-            Log.e(TAG, e.getMessage());
-        }
-        notifyMyLocation();
+    public void onLocationChanged(final Location location) {
+        mExecutorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                mLastLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                try {
+                    final JSONObject jLocation = new JSONObject();
+                    jLocation.put("lat", mLastLocation.latitude);
+                    jLocation.put("lon", mLastLocation.longitude);
+                    mConnection.sendTextMessage(jLocation.toString());
+                } catch (JSONException e) {
+                    Log.e(TAG, e.getMessage());
+                }
+                notifyMyLocation();
+            }
+        });
     }
 
     @Override
@@ -172,15 +187,52 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
         mLocationClient.removeLocationUpdates(this);
     }
 
+    @Override
+    public boolean handleMessage(Message msg) {
+        switch (msg.what) {
+            case MSG_WEB_SOCKET_EXC:
+                int receiversCount = mReceivers.size();
+                for (int i = 0; i < receiversCount; i++) {
+                    mReceivers.get(mReceivers.keyAt(i)).onConnectionFailed(-1, String.valueOf(msg.obj));
+                }
+                return true;
+            case MSG_ON_CONNECTION_ESTABLISHED:
+                receiversCount = mReceivers.size();
+                for (int i = 0; i < receiversCount; i++) {
+                    mReceivers.get(mReceivers.keyAt(i)).onConnectionEstablished();
+                }
+                return true;
+            case MSG_ON_CONNECTION_FAILED:
+                receiversCount = mReceivers.size();
+                for (int i = 0; i < receiversCount; i++) {
+                    mReceivers.get(mReceivers.keyAt(i)).onConnectionFailed(msg.arg1, String.valueOf(msg.obj));
+                }
+                return true;
+            case MSG_ON_UPDATE_POINTS:
+                if (mPoints.size() == 0) return true;
+                receiversCount = mReceivers.size();
+                for (int i = 0; i < receiversCount; i++) {
+                    mReceivers.get(mReceivers.keyAt(i)).onUpdatePoints(mPoints);
+                }
+                return true;
+            case MSG_ON_UPDATE_MY_LOCATION:
+                if (mLastLocation == null) return true;
+                receiversCount = mReceivers.size();
+                for (int i = 0; i < receiversCount; i++) {
+                    mReceivers.get(mReceivers.keyAt(i)).onUpdateMyLocation(mLastLocation);
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+
     class DefaultWebSocketHandler extends WebSocketHandler {
 
         @Override
         public void onOpen() {
             Log.d(TAG, "WebSocket opened");
-            final int receiversCount = mReceivers.size();
-            for (int i = 0; i < receiversCount; i++) {
-                mReceivers.get(mReceivers.keyAt(i)).onConnectionEstablished();
-            }
+            mHandler.sendEmptyMessage(MSG_ON_CONNECTION_ESTABLISHED);
             startLocationSending();
         }
 
@@ -188,10 +240,11 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
         public void onClose(int code, String reason) {
             Log.d(TAG, "WebSocket closed {code: " + code + ", reason: " + reason + '}');
             if (!mSilentDisconnect) {
-                final int receiversCount = mReceivers.size();
-                for (int i = 0; i < receiversCount; i++) {
-                    mReceivers.get(mReceivers.keyAt(i)).onConnectionFailed(code, reason);
-                }
+                final Message msg = new Message();
+                msg.what = MSG_ON_CONNECTION_FAILED;
+                msg.arg1 = code;
+                msg.obj = reason;
+                mHandler.sendMessage(msg);
             } else {
                 mSilentDisconnect = false;
             }
@@ -199,26 +252,31 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
         }
 
         @Override
-        public void onTextMessage(String payload) {
+        public void onTextMessage(final String payload) {
             Log.d(TAG, "WebSocket received message {payload:" + payload + '}');
-            if (payload == null) return;
-            try {
-                final JSONArray jPoints = new JSONArray(payload);
-                final int jPointsLength = jPoints.length();
+            mExecutorService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    if (payload == null) return;
+                    try {
+                        final JSONArray jPoints = new JSONArray(payload);
+                        final int jPointsLength = jPoints.length();
 
-                JSONObject jPoint;
-                LatLng position;
-                int id;
-                for (int i = 0; i < jPointsLength; i++) {
-                    jPoint = jPoints.getJSONObject(i);
-                    id = jPoint.getInt("id");
-                    position = new LatLng(jPoint.getDouble("lat"), jPoint.getDouble("lon"));
-                    mPoints.put(id, position);
+                        JSONObject jPoint;
+                        LatLng position;
+                        int id;
+                        for (int i = 0; i < jPointsLength; i++) {
+                            jPoint = jPoints.getJSONObject(i);
+                            id = jPoint.getInt("id");
+                            position = new LatLng(jPoint.getDouble("lat"), jPoint.getDouble("lon"));
+                            mPoints.put(id, position);
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, e.getMessage());
+                    }
+                    notifyUpdatePoints();
                 }
-            } catch (JSONException e) {
-                Log.e(TAG, e.getMessage());
-            }
-            notifyUpdatePoints();
+            });
         }
     }
 
