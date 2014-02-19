@@ -104,6 +104,10 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.mi_change_connection) {
+            if(mBinder == null) {
+                Toast.makeText(this, R.string.wait_for_connection, Toast.LENGTH_SHORT).show();
+                return true;
+            }
             final boolean serviceActive = mPreferenceManager.getBoolean(Preference.SERVICE_ACTIVE);
             mPreferenceManager.save(Preference.SERVICE_ACTIVE, !serviceActive);
 
@@ -132,7 +136,7 @@ public class MapActivity extends ActionBarActivity implements TrackerBinder.Rece
 
     @Override
     public void onConnectionFailed(int code, String reason) {
-        Toast.makeText(this, reason, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, reason, Toast.LENGTH_LONG).show();
     }
 
     @Override

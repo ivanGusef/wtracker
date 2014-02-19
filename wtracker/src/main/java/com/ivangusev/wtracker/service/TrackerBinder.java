@@ -34,9 +34,10 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
 
     private final static int UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
     private final static int FAST_INTERVAL_CEILING_IN_MILLISECONDS = 30000;
-    private static final String WEB_SERVER_URL = "ws://mini-mdt.wheely.com?username=%s&password=%s";
-    private static final int SOCKET_CONNECTION_TIMEOUT = 30000; //30 seconds
+    private static final int SOCKET_CONNECTION_TIMEOUT = 15000; //15 seconds
     private static final int SOCKET_RECEIVE_TIMEOUT = 10000; //10 seconds
+
+    private static final String WEB_SERVER_URL = "ws://mini-mdt.wheely.com?username=%s&password=%s";
 
     private static final int MSG_WEB_SOCKET_EXC = 1;
     private static final int MSG_ON_CONNECTION_ESTABLISHED = 2;
@@ -60,6 +61,8 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     private boolean mLocationRequested;
     private PreferenceManager mPreferenceManager;
     private boolean mSilentDisconnect;
+
+    private ConnectionResult mConnectionResult = null;
 
     public TrackerBinder(TrackerService mService) {
         this.mService = mService;
@@ -126,8 +129,13 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     }
 
     public void startLocationSending() {
-        if (!mLocationClient.isConnected()) {
+        if (mLocationClient.isConnecting()) {
             mLocationRequested = true;
+            return;
+        }
+
+        if(!mLocationClient.isConnected()) {
+            onGooglePlayServicesConnectionFailed();
             return;
         }
 
@@ -175,6 +183,10 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.e(TAG, "Connection failed {errorCode:" + connectionResult.getErrorCode() + '}');
+        mConnectionResult = connectionResult;
+        if(mConnection.isConnected()) {
+            onGooglePlayServicesConnectionFailed();
+        }
     }
 
     private void startLocationUpdates() {
@@ -185,6 +197,15 @@ public class TrackerBinder extends Binder implements GooglePlayServicesClient.Co
     private void stopLocationUpdates() {
         mService.changeStatus(R.string.status_disconnected);
         mLocationClient.removeLocationUpdates(this);
+    }
+
+    private void onGooglePlayServicesConnectionFailed() {
+        if(mConnectionResult == null) return;
+        final Message msg = new Message();
+        msg.what = MSG_ON_CONNECTION_FAILED;
+        msg.obj = mService.getString(R.string.e_google_play_services_conn_failed, mConnectionResult.getErrorCode());
+        mHandler.sendMessage(msg);
+        mConnection.disconnect();
     }
 
     @Override

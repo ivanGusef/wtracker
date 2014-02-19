@@ -60,12 +60,6 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
 
         mPreferenceManager = PreferenceManager.getInstance(this);
 
-        if(mPreferenceManager.getBoolean(Preference.LOGGED_IN)) {
-            startActivity(new Intent(this, MapActivity.class));
-            finish();
-            return;
-        }
-
         mLoginInput = (TextView) findViewById(R.id.input_login);
         mPasswordInput = (TextView) findViewById(R.id.input_password);
 
@@ -74,8 +68,8 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
         mPasswordInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if(event == null) return false;
-                if(event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
+                if (event == null) return false;
+                if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
                     signIn();
                     return true;
                 }
@@ -85,6 +79,7 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
 
         mProgress = new ProgressDialog(this);
         mProgress.setMessage(getString(R.string.authenticating));
+        mProgress.setCancelable(false);
     }
 
     @Override
@@ -99,6 +94,7 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
             mBinder.unregisterReceiver(TAG.hashCode());
             unbindService(mConnection);
         }
+        if (mProgress.isShowing()) mProgress.dismiss();
         super.onStop();
     }
 
@@ -122,15 +118,15 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
 
     @Override
     public void onConnectionFailed(int code, String reason) {
-        mProgress.dismiss();
+        if (mProgress.isShowing()) mProgress.dismiss();
         switch (code) {
             case WebSocketHandler.CLOSE_CONNECTION_LOST:
-                Toast.makeText(this, "Login or password is incorrect", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Login or password is incorrect", Toast.LENGTH_LONG).show();
                 break;
             case WebSocketHandler.CLOSE_INTERNAL_ERROR:
             case WebSocketHandler.CLOSE_PROTOCOL_ERROR:
             case WebSocketHandler.CLOSE_CANNOT_CONNECT:
-                Toast.makeText(this, reason, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, reason, Toast.LENGTH_LONG).show();
                 break;
 
         }
@@ -138,7 +134,7 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
 
     @Override
     public void onUpdatePoints(SparseArray<LatLng> points) {
-        mProgress.dismiss();
+        if (mProgress.isShowing()) mProgress.dismiss();
         mPreferenceManager.save(Preference.SERVICE_ACTIVE, true);
         mPreferenceManager.save(Preference.LOGGED_IN, true);
         startService(new Intent(this, TrackerService.class));

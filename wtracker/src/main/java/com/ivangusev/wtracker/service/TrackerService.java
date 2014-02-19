@@ -7,18 +7,13 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import com.ivangusev.wtracker.Preference;
-import com.ivangusev.wtracker.PreferenceManager;
 import com.ivangusev.wtracker.R;
-import com.ivangusev.wtracker.activity.LoginActivity;
 import com.ivangusev.wtracker.activity.MapActivity;
 
 /**
  * Created by ivan on 12.02.14.
  */
 public class TrackerService extends Service {
-
-    private static final String TAG = TrackerService.class.getName();
 
     public static final String EXTRA_CONNECT_FORCE = "extra_connect_force";
 
@@ -31,14 +26,14 @@ public class TrackerService extends Service {
     public void onCreate() {
         mForegroundCompatWrapper.onCreate();
 
-        changeStatus(R.string.status_disconnected);
         mBinder = new TrackerBinder(this);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent.hasExtra(EXTRA_CONNECT_FORCE) && intent.getBooleanExtra(EXTRA_CONNECT_FORCE, false))
+        if (intent.hasExtra(EXTRA_CONNECT_FORCE) && intent.getBooleanExtra(EXTRA_CONNECT_FORCE, false)) {
             mBinder.reconnect();
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -68,10 +63,7 @@ public class TrackerService extends Service {
         mForegroundNotifBuilder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher));
         mForegroundNotifBuilder.setSmallIcon(android.R.drawable.stat_notify_sync);
 
-        final PreferenceManager mPreferenceManager = PreferenceManager.getInstance(this);
-        final Intent intent;
-        if (mPreferenceManager.getBoolean(Preference.LOGGED_IN)) intent = new Intent(this, MapActivity.class);
-        else intent = new Intent(this, LoginActivity.class);
+        final Intent intent = new Intent(this, MapActivity.class);
         final PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
         mForegroundNotifBuilder.setContentIntent(pIntent);
 

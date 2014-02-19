@@ -17,4 +17,5 @@
     <string name="sign_out">Sign Out</string>
     <string name="dsc_splash">Splash logo</string>
     <string name="wait_for_connection">Connecting to service. Wait please.</string>
+    <string name="e_google_play_services_conn_failed">Connection to Google Play Services has failed with error code %1$s</string>
 </resources>

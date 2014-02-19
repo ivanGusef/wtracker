@@ -14,13 +14,13 @@ import java.lang.reflect.Method;
  */
 public class ForegroundCompatWrapper {
 
-    private final Service mService;
-
     private static final String TAG = ForegroundCompatWrapper.class.getName();
 
     private static final Class<?>[] mSetForegroundSignature = new Class[]{boolean.class};
     private static final Class<?>[] mStartForegroundSignature = new Class[]{int.class, Notification.class};
     private static final Class<?>[] mStopForegroundSignature = new Class[]{boolean.class};
+
+    private final Service mService;
 
     private NotificationManager mNotificationManager;
     private Method mSetForeground;
