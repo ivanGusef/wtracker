@@ -7,7 +7,11 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import com.ivangusev.wtracker.Preference;
+import com.ivangusev.wtracker.PreferenceManager;
 import com.ivangusev.wtracker.R;
+import com.ivangusev.wtracker.activity.LoginActivity;
+import com.ivangusev.wtracker.activity.MapActivity;
 
 /**
  * Created by ivan on 12.02.14.
@@ -64,8 +68,11 @@ public class TrackerService extends Service {
         mForegroundNotifBuilder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher));
         mForegroundNotifBuilder.setSmallIcon(android.R.drawable.stat_notify_sync);
 
-        final Intent intent = new Intent(getPackageName() + ".ACTION_FAKE");
-        final PendingIntent pIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+        final PreferenceManager mPreferenceManager = PreferenceManager.getInstance(this);
+        final Intent intent;
+        if (mPreferenceManager.getBoolean(Preference.LOGGED_IN)) intent = new Intent(this, MapActivity.class);
+        else intent = new Intent(this, LoginActivity.class);
+        final PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
         mForegroundNotifBuilder.setContentIntent(pIntent);
 
         return mForegroundNotifBuilder.build();

@@ -58,10 +58,17 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        mPreferenceManager = PreferenceManager.getInstance(this);
+
+        if(mPreferenceManager.getBoolean(Preference.LOGGED_IN)) {
+            startActivity(new Intent(this, MapActivity.class));
+            finish();
+            return;
+        }
+
         mLoginInput = (TextView) findViewById(R.id.input_login);
         mPasswordInput = (TextView) findViewById(R.id.input_password);
 
-        mPreferenceManager = PreferenceManager.getInstance(this);
         mLoginInput.setText(mPreferenceManager.getString(Preference.LOGIN));
 
         mPasswordInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -133,6 +140,7 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
     public void onUpdatePoints(SparseArray<LatLng> points) {
         mProgress.dismiss();
         mPreferenceManager.save(Preference.SERVICE_ACTIVE, true);
+        mPreferenceManager.save(Preference.LOGGED_IN, true);
         startService(new Intent(this, TrackerService.class));
         startActivity(new Intent(this, MapActivity.class));
         mBinder.unregisterReceiver(TAG.hashCode());

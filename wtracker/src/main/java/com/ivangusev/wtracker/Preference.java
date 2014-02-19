@@ -9,4 +9,5 @@ public interface Preference {
     String PASSWORD = "password";
 
     String SERVICE_ACTIVE = "service_active";
+    String LOGGED_IN = "logged_in";
 }
