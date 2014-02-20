@@ -16,11 +16,15 @@ import com.ivangusev.wtracker.activity.MapActivity;
 public class TrackerService extends Service {
 
     public static final String EXTRA_CONNECT_FORCE = "extra_connect_force";
+    public static final String EXTRA_FOREGROUND = "extra_foreground";
 
     private ForegroundCompatWrapper mForegroundCompatWrapper = new ForegroundCompatWrapper(this);
     private NotificationCompat.Builder mForegroundNotifBuilder;
 
     private TrackerBinder mBinder;
+
+    private boolean mForeground;
+    private int mStatus;
 
     @Override
     public void onCreate() {
@@ -33,6 +37,10 @@ public class TrackerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent.hasExtra(EXTRA_CONNECT_FORCE) && intent.getBooleanExtra(EXTRA_CONNECT_FORCE, false)) {
             mBinder.reconnect();
+        }
+        if (intent.hasExtra(EXTRA_FOREGROUND) && intent.getBooleanExtra(EXTRA_FOREGROUND, false)) {
+            mForeground = true;
+            changeStatus(mStatus);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -50,6 +58,10 @@ public class TrackerService extends Service {
     }
 
     public void changeStatus(int textRes) {
+        if(!mForeground) {
+            mStatus = textRes;
+            return;
+        }
         final Notification n = prepareNotification(textRes);
         mForegroundCompatWrapper.startForegroundCompat(R.string.service_tracker_id, n);
     }

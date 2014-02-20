@@ -137,7 +137,10 @@ public class LoginActivity extends ActionBarActivity implements TrackerBinder.Re
         if (mProgress.isShowing()) mProgress.dismiss();
         mPreferenceManager.save(Preference.SERVICE_ACTIVE, true);
         mPreferenceManager.save(Preference.LOGGED_IN, true);
-        startService(new Intent(this, TrackerService.class));
+
+        final Intent serviceIntent = new Intent(this, TrackerService.class);
+        serviceIntent.putExtra(TrackerService.EXTRA_FOREGROUND, true);
+        startService(serviceIntent);
         startActivity(new Intent(this, MapActivity.class));
         mBinder.unregisterReceiver(TAG.hashCode());
     }
